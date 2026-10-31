@@ -1,0 +1,18 @@
+{
+  "id": "./",
+  "name": "ほぐしノート｜肩こり・腰痛セルフケア",
+  "short_name": "ほぐしノート",
+  "description": "肩こり・腰痛のセルフケアを習慣にするアプリ。リマインド、体操のやり方、ケアの記録、こり・痛みの変化の見える化。",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "lang": "ja",
+  "background_color": "#f3f7f5",
+  "theme_color": "#17756a",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

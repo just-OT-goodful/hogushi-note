@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>ほぐしノート｜肩こり・腰痛セルフケア</title>
+  <meta name="description" content="肩こり・腰痛のセルフケアを習慣にするアプリ。リマインド、体操のやり方、ケアの記録、こり・痛みの変化の見える化。" />
+  <meta name="theme-color" content="#17756a" media="(prefers-color-scheme: light)" />
+  <meta name="theme-color" content="#0f1a17" media="(prefers-color-scheme: dark)" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="icon" type="image/png" href="icons/icon-192.png" />
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="ほぐしノート" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <a class="skip" href="#app">本文へ移動</a>
+  <div id="banner"></div>
+  <main id="app" tabindex="-1"></main>
+  <nav id="tabs" aria-label="メインメニュー">
+    <a href="#/home" data-tab="home">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-8 9 8M5 10v10h5v-6h4v6h5V10"/></svg><span>ホーム</span></a>
+    <a href="#/library" data-tab="library">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="5" r="2.2"/><path d="M12 8v6M6 10l6 1 6-1M9 21l3-7 3 7"/></svg><span>体操</span></a>
+    <a href="#/records" data-tab="records">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-8M22 20H2"/></svg><span>記録</span></a>
+    <a href="#/settings" data-tab="settings">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a1 1 0 011 1v1.1a7 7 0 012.1.9l.8-.8a1 1 0 011.4 1.4l-.8.8a7 7 0 01.9 2.1H19a1 1 0 010 2h-1.1a7 7 0 01-.9 2.1l.8.8a1 1 0 01-1.4 1.4l-.8-.8a7 7 0 01-2.1.9V19a1 1 0 01-2 0v-1.1a7 7 0 01-2.1-.9l-.8.8a1 1 0 01-1.4-1.4l.8-.8A7 7 0 015.1 13H4a1 1 0 010-2h1.1a7 7 0 01.9-2.1l-.8-.8a1 1 0 011.4-1.4l.8.8A7 7 0 0111 5.1V4a1 1 0 011-1z"/><circle cx="12" cy="12" r="2.6"/></svg><span>設定</span></a>
+  </nav>
+  <noscript>このアプリを使うには JavaScript を有効にしてください。</noscript>
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
