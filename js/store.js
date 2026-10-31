@@ -16,16 +16,73 @@ const defaults = () => ({
   fired: {},       // 通知済みの記録（重複防止）
 });
 
+// ---- 読み込んだデータの検証（壊れたデータ・細工されたバックアップから守る） ----
+const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
+const URL_RE = /^https?:\/\//i;
+
+function cleanLogs(arr) {
+  const seen = new Set();
+  return (Array.isArray(arr) ? arr : []).filter((l) => {
+    if (!l || typeof l.id !== 'string' || typeof l.ex !== 'string' || !Number.isFinite(l.ts) || l.ts <= 0 || seen.has(l.id)) return false;
+    seen.add(l.id);
+    return true;
+  }).map((l) => ({ id: l.id.slice(0, 40), ex: l.ex.slice(0, 64), ts: l.ts }));
+}
+
+function cleanCheckins(arr) {
+  const seen = new Set();
+  const out = [];
+  for (const c of Array.isArray(arr) ? arr : []) {
+    if (!c || typeof c.id !== 'string' || !Number.isFinite(c.ts) || c.ts <= 0 || seen.has(c.id)) continue;
+    const neck = c.neck == null || c.neck === '' ? NaN : Number(c.neck);
+    const back = c.back == null || c.back === '' ? NaN : Number(c.back);
+    if (!Number.isFinite(neck) || !Number.isFinite(back)) continue;
+    seen.add(c.id);
+    out.push({
+      id: c.id.slice(0, 40), ts: c.ts,
+      neck: Math.min(10, Math.max(0, neck)), back: Math.min(10, Math.max(0, back)),
+      note: typeof c.note === 'string' ? c.note.slice(0, 80) : '', after: c.after === true,
+    });
+  }
+  return out;
+}
+
+function cleanRemind(r) {
+  const d = defaults().remind;
+  if (!r || typeof r !== 'object') return d;
+  const times = Array.isArray(r.times) ? [...new Set(r.times.filter((t) => typeof t === 'string' && TIME_RE.test(t)))].sort() : d.times;
+  const days = Array.isArray(r.days) ? [...new Set(r.days.filter((x) => Number.isInteger(x) && x >= 0 && x <= 6))] : d.days;
+  return { enabled: r.enabled === true, times, days };
+}
+
+function cleanLinks(o) {
+  const out = {};
+  if (!o || typeof o !== 'object' || Array.isArray(o)) return out;
+  for (const [k, v] of Object.entries(o)) {
+    if (Array.isArray(v)) out[k] = v.filter((u) => typeof u === 'string' && URL_RE.test(u)).slice(0, 20);
+  }
+  return out;
+}
+
+function sanitize(s) {
+  return {
+    logs: cleanLogs(s.logs), checkins: cleanCheckins(s.checkins), remind: cleanRemind(s.remind),
+    links: cleanLinks(s.links), fired: s.fired && typeof s.fired === 'object' && !Array.isArray(s.fired) ? s.fired : {},
+  };
+}
+
 let state;
 try {
   const raw = localStorage.getItem(KEY);
-  state = raw ? { ...defaults(), ...JSON.parse(raw) } : defaults();
+  state = raw ? sanitize({ ...defaults(), ...JSON.parse(raw) }) : defaults();
 } catch {
   state = defaults();
 }
 
+let onSaveError = null;
+export const setSaveErrorHandler = (fn) => { onSaveError = fn; };
 function save() {
-  try { localStorage.setItem(KEY, JSON.stringify(state)); } catch { /* 容量超過・プライベートモード等 */ }
+  try { localStorage.setItem(KEY, JSON.stringify(state)); } catch { onSaveError?.(); /* 容量超過・プライベートモード等 */ }
 }
 
 export const get = () => state;
@@ -112,24 +169,26 @@ export function exportJSON() {
 
 export function importJSON(text) {
   const d = JSON.parse(text);
-  if (d.app !== 'selfcare' || !Array.isArray(d.logs) || !Array.isArray(d.checkins)) throw new Error('形式が違います');
+  if (!d || d.app !== 'selfcare' || !Array.isArray(d.logs) || !Array.isArray(d.checkins)) throw new Error('形式が違います');
+  const logs = cleanLogs(d.logs);
+  const checkins = cleanCheckins(d.checkins);
   update((s) => {
     const have = new Set(s.logs.map((l) => l.id));
-    d.logs.forEach((l) => { if (!have.has(l.id)) s.logs.push(l); });
+    logs.forEach((l) => { if (!have.has(l.id)) s.logs.push(l); });
     const haveC = new Set(s.checkins.map((c) => c.id));
-    d.checkins.forEach((c) => { if (!haveC.has(c.id)) s.checkins.push(c); });
+    checkins.forEach((c) => { if (!haveC.has(c.id)) s.checkins.push(c); });
     s.logs.sort((a, b) => a.ts - b.ts);
     s.checkins.sort((a, b) => a.ts - b.ts);
-    if (d.remind) s.remind = { ...s.remind, ...d.remind };
-    if (d.links) s.links = { ...s.links, ...d.links };
+    if (d.remind) s.remind = cleanRemind({ ...s.remind, ...d.remind });
+    if (d.links) s.links = cleanLinks({ ...s.links, ...d.links });
   });
+  return { logs: logs.length, checkins: checkins.length, skipped: d.logs.length + d.checkins.length - logs.length - checkins.length };
 }
 
 export function resetAll() {
   state = defaults();
   save();
 }
-
 // ---- 写真・動画（IndexedDB） ----
 const DB = 'selfcare-media';
 const openDB = () => new Promise((res, rej) => {

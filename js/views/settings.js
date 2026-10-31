@@ -47,7 +47,11 @@ function build(redraw) {
   const timeRow = (t, i) => h('div', { class: 'time-row' },
     h('input', {
       type: 'time', value: t, 'aria-label': `${i + 1}つ目の時刻`,
-      onchange: (e) => { if (e.target.value) update((s) => { s.remind.times[i] = e.target.value; }); },
+      onchange: (e) => {
+        if (!e.target.value) return;
+        update((s) => { s.remind.times[i] = e.target.value; s.remind.times = [...new Set(s.remind.times)].sort(); });
+        redraw();
+      },
     }),
     h('button', { class: 'link-btn danger', onclick: () => { update((s) => s.remind.times.splice(i, 1)); redraw(); } }, '削除'));
 
@@ -64,7 +68,7 @@ function build(redraw) {
     h('h3', {}, '知らせる時刻'),
     r.times.map(timeRow),
     h('div', { class: 'row' },
-      h('button', { class: 'btn ghost', onclick: () => { update((s) => s.remind.times.push('12:00')); redraw(); } }, '＋ 時刻を追加')),
+      h('button', { class: 'btn ghost', onclick: () => { update((s) => { s.remind.times = [...new Set([...s.remind.times, '12:00'])].sort(); }); redraw(); } }, '＋ 時刻を追加')),
     h('h3', {}, 'おすすめの設定'),
     h('div', { class: 'chips' }, PRESETS.map((p) => h('button', { class: 'chip', onclick: () => { update((s) => { s.remind.times = [...p.times]; }); redraw(); } }, p.label))),
     h('h3', {}, '曜日'), days,
@@ -93,7 +97,11 @@ function build(redraw) {
     onchange: async (e) => {
       const f = e.target.files[0]; e.target.value = '';
       if (!f) return;
-      try { importJSON(await f.text()); toast('読み込みました'); redraw(); } catch { toast('読み込めませんでした（ファイルを確認してください）'); }
+      try {
+        const res = importJSON(await f.text());
+        toast(res.skipped ? `読み込みました（${res.skipped}件は形式が不正のため除きました）` : '読み込みました');
+        redraw();
+      } catch { toast('読み込めませんでした（ファイルを確認してください）'); }
     },
   });
 

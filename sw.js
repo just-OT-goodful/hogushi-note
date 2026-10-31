@@ -1,7 +1,7 @@
 // Service Worker：アプリ本体をキャッシュしてオフラインでも開けるようにする
 // 取得方式は「キャッシュを先に返し、裏で更新」。更新は次回起動時に反映されます。
 // 構成ファイルを増減したら ASSETS を更新し、VERSION を上げてください。
-const VERSION = 'v2';
+const VERSION = 'v3';
 const CACHE = `selfcare-${VERSION}`;
 const ASSETS = [
   './', 'index.html', 'manifest.webmanifest', 'css/style.css',

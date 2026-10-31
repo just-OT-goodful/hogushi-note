@@ -30,7 +30,17 @@ const openSheets = new Set();
 export const closeAllSheets = () => [...openSheets].forEach((close) => close());
 
 export function openSheet(content, { title = '' } = {}) {
-  const onKey = (e) => { if (e.key === 'Escape') close(); };
+  const prevFocus = document.activeElement;
+  const onKey = (e) => {
+    if (e.key === 'Escape') { close(); return; }
+    if (e.key !== 'Tab') return;
+    // フォーカスをシートの中に閉じ込める
+    const items = [...sheet.querySelectorAll('button, input, a[href], textarea, select')].filter((el) => !el.disabled && !el.hidden);
+    if (!items.length) return;
+    const first = items[0]; const last = items.at(-1);
+    if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+  };
   const overlay = h('div', { class: 'overlay', onclick: (e) => { if (e.target === overlay) close(); } });
   const sheet = h('div', { class: 'sheet', role: 'dialog', 'aria-modal': 'true', 'aria-label': title },
     h('div', { class: 'sheet-head' },
@@ -40,8 +50,14 @@ export function openSheet(content, { title = '' } = {}) {
   overlay.append(sheet);
   document.body.append(overlay);
   document.addEventListener('keydown', onKey);
-  function close() { document.removeEventListener('keydown', onKey); openSheets.delete(close); overlay.remove(); }
+  function close() {
+    document.removeEventListener('keydown', onKey);
+    openSheets.delete(close);
+    overlay.remove();
+    if (prevFocus && prevFocus.isConnected) prevFocus.focus();
+  }
   openSheets.add(close);
+  (sheet.querySelector('input, textarea') || sheet.querySelector('button.btn'))?.focus();
   return close;
 }
 

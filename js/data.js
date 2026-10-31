@@ -65,7 +65,7 @@ export const EXERCISES = [
     dose: { type: 'hold', sec: 20, sets: 2, sides: 2 },
     base: 'sitFront',
     a: {},
-    b: { head: [121, 50], neck: [103, 68], eR: [142, 78], wR: [123, 45], eL: [76, 110], wL: [78, 136], sL: [79, 80] },
+    b: { head: [121, 50], neck: [103, 68], eR: [143, 68], wR: [126, 46], eL: [76, 110], wL: [78, 136], sL: [79, 80] },
     focus: [[84, 68]],
     steps: [
       '椅子に浅く座り、背すじをすっと伸ばします。',
@@ -108,7 +108,7 @@ export const EXERCISES = [
     dose: { type: 'reps', reps: 10, sets: 2 },
     base: 'sitFront',
     a: { eL: [68, 104], eR: [132, 104], wL: [84, 78], wR: [116, 78] },
-    b: { eL: [62, 68], eR: [138, 68], wL: [84, 78], wR: [116, 78], sL: [80, 73], sR: [120, 73] },
+    b: { eL: [58, 74], eR: [142, 74], wL: [84, 78], wR: [116, 78], sL: [80, 73], sR: [120, 73] },
     focus: ['sL', 'sR'],
     steps: [
       '両手の指先を、それぞれの肩にのせます。',

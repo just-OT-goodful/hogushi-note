@@ -1,5 +1,6 @@
 // ルーター・リマインド監視・Service Worker 登録
-import { showBanner, closeAllSheets } from './ui.js';
+import { showBanner, closeAllSheets, toast } from './ui.js';
+import { setSaveErrorHandler, ymd } from './store.js';
 import { homeView } from './views/home.js';
 import { libraryView } from './views/library.js';
 import { exerciseView, routineDoneView } from './views/exercise.js';
@@ -29,8 +30,19 @@ function view() {
   }
 }
 
+let renderedDay = ymd(new Date());
+
+// 記録を保存できなかったときは、気づけるように知らせる（ストレージの空き不足・プライベートモード等）
+let warned = false;
+setSaveErrorHandler(() => {
+  if (warned) return;
+  warned = true;
+  toast('記録を保存できませんでした。端末の空き容量やプライベートモードを確認してください');
+});
+
 function render() {
   closeAllSheets();
+  renderedDay = ymd(new Date());
   const [tab, el] = view();
   app.replaceChildren(el);
   tabs.forEach((t) => (t.dataset.tab === tab ? t.setAttribute('aria-current', 'page') : t.removeAttribute('aria-current')));
@@ -54,7 +66,13 @@ async function tick() {
 }
 tick();
 setInterval(tick, 20000);
-document.addEventListener('visibilitychange', () => { if (!document.hidden) tick(); });
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) return;
+  tick();
+  // 日付をまたいで開いたままだった場合は、今日の表示に更新する（体操の途中などは触らない）
+  const name = location.hash.replace(/^#\/?/, '').split('/')[0];
+  if (ymd(new Date()) !== renderedDay && (name === '' || name === 'home' || name === 'records')) render();
+});
 
 // ---- Service Worker（オフライン対応・ホーム画面追加） ----
 if ('serviceWorker' in navigator) {

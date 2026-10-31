@@ -5,15 +5,31 @@ import { get, update, addLog, logsOn, ymd, addMedia, listMedia, deleteMedia } fr
 
 // ---- 効果音・振動 ----
 let actx;
-function beep() {
+// タップした瞬間に音を使える状態にしておく（スマホは、タップ以外で鳴らそうとしても無音になるため）
+function unlockAudio() {
   try {
     actx ||= new AudioContext();
+    if (actx.state === 'suspended') actx.resume();
+  } catch { /* 音が出せなくても続行 */ }
+}
+function beep() {
+  try {
+    unlockAudio();
     const o = actx.createOscillator(); const g = actx.createGain();
     o.connect(g); g.connect(actx.destination);
     o.frequency.value = 880; g.gain.value = 0.08;
     o.start(); o.stop(actx.currentTime + 0.18);
   } catch { /* 音が出せなくても続行 */ }
   navigator.vibrate?.([180, 80, 180]);
+}
+
+// キープ中に画面が暗くならないようにする（対応していない端末では何もしない）
+let wakeLock = null;
+async function keepAwake(on) {
+  try {
+    if (on) wakeLock = await navigator.wakeLock?.request('screen');
+    else { await wakeLock?.release(); wakeLock = null; }
+  } catch { /* 取得できなくても続行 */ }
 }
 
 // ---- 体操の詳細（routine: { id, idx } のときは「まとめてケア」の途中） ----
@@ -89,7 +105,8 @@ function counter(ex) {
 
   if (d.type === 'hold') {
     const total = d.sets * d.sides;
-    let done = 0; let left = d.sec; let timer = 0;
+    const full = d.sec * 1000;
+    let done = 0; let remain = full; let timer = 0; let end = 0;
     const big = h('div', { class: 'big-time', 'aria-live': 'off' }, String(d.sec));
     const label = h('div', { class: 'muted' });
     const dots = h('div', { class: 'dots', 'aria-hidden': 'true' });
@@ -98,20 +115,21 @@ function counter(ex) {
     const paint = () => {
       dots.replaceChildren(...Array.from({ length: total }, (_, i) => h('i', { class: i < done ? 'on' : '' })));
       label.textContent = done >= total ? 'おつかれさまでした！' : `${done + 1} / ${total} 回目 ${sideName()}`;
-      go.textContent = timer ? '一時停止' : done >= total ? 'もう一度' : 'スタート';
+      go.textContent = timer ? '一時停止' : done >= total ? 'もう一度' : remain < full ? '再開' : 'スタート';
+      big.textContent = Math.ceil(remain / 1000);
     };
-    const stop = () => { clearInterval(timer); timer = 0; };
+    const stop = () => { clearInterval(timer); timer = 0; keepAwake(false); };
     go.addEventListener('click', () => {
-      if (timer) { stop(); paint(); return; }
-      if (done >= total) { done = 0; }
-      left = d.sec; big.textContent = left;
-      let t0 = performance.now();
+      unlockAudio();
+      if (timer) { remain = Math.max(0, end - performance.now()); stop(); paint(); return; }
+      if (done >= total) { done = 0; remain = full; }
+      end = performance.now() + remain;
+      keepAwake(true);
       timer = setInterval(() => {
         if (!box.isConnected) { stop(); return; }
-        const el = Math.floor((performance.now() - t0) / 1000);
-        left = Math.max(0, d.sec - el);
-        big.textContent = left;
-        if (left <= 0) { stop(); done++; beep(); big.textContent = d.sec; paint(); }
+        remain = end - performance.now();
+        if (remain <= 0) { stop(); done++; remain = full; beep(); }
+        paint();
       }, 200);
       paint();
     });
@@ -125,7 +143,7 @@ function counter(ex) {
     const tap = h('button', { class: 'btn primary block' }, '1回できた +1');
     const undo = h('button', { class: 'link-btn' }, '1つ戻す');
     const paint = () => { big.textContent = `${n} / ${total}`; tap.textContent = n >= total ? 'もう一度' : '1回できた +1'; };
-    tap.addEventListener('click', () => { n = n >= total ? 1 : n + 1; navigator.vibrate?.(15); if (n === total) beep(); paint(); });
+    tap.addEventListener('click', () => { unlockAudio(); n = n >= total ? 1 : n + 1; navigator.vibrate?.(15); if (n === total) beep(); paint(); });
     undo.addEventListener('click', () => { n = Math.max(0, n - 1); paint(); });
     box.append(hint, big, tap, undo);
     paint();
@@ -159,6 +177,7 @@ function mediaSection(ex) {
   }
   // 動画リンク
   const linkNode = (url) => {
+    if (!/^https?:\/\//i.test(url)) return h('span', {}, '（無効なリンクです）');
     const id = ytId(url);
     return id
       ? h('iframe', { src: `https://www.youtube-nocookie.com/embed/${id}`, title: `${ex.name}の動画`, allowfullscreen: true, loading: 'lazy', referrerpolicy: 'strict-origin-when-cross-origin', allow: 'encrypted-media; picture-in-picture' })
