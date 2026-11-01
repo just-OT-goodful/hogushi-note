@@ -14,6 +14,7 @@ const defaults = () => ({
   remind: { enabled: false, times: ['09:30', '12:30', '15:30'], days: [1, 2, 3, 4, 5] },
   links: {},       // { [exId]: [url] }         動画リンク（YouTubeなど）
   fired: {},       // 通知済みの記録（重複防止）
+  meta: { lastBackup: 0, snoozeUntil: 0, introSeen: false }, // バックアップ日・お知らせの保留・初回説明の表示済み
 });
 
 // ---- 読み込んだデータの検証（壊れたデータ・細工されたバックアップから守る） ----
@@ -64,8 +65,14 @@ function cleanLinks(o) {
   return out;
 }
 
+function cleanMeta(m) {
+  const num = (v) => (Number.isFinite(v) && v > 0 ? v : 0);
+  return { lastBackup: num(m?.lastBackup), snoozeUntil: num(m?.snoozeUntil), introSeen: m?.introSeen === true };
+}
+
 function sanitize(s) {
   return {
+    meta: cleanMeta(s.meta),
     logs: cleanLogs(s.logs), checkins: cleanCheckins(s.checkins), remind: cleanRemind(s.remind),
     links: cleanLinks(s.links), fired: s.fired && typeof s.fired === 'object' && !Array.isArray(s.fired) ? s.fired : {},
   };
@@ -85,8 +92,11 @@ function save() {
   try { localStorage.setItem(KEY, JSON.stringify(state)); } catch { onSaveError?.(); /* 容量超過・プライベートモード等 */ }
 }
 
+let saveHook = null;
+export const setSaveHook = (fn) => { saveHook = fn; };
+
 export const get = () => state;
-export function update(fn) { fn(state); save(); }
+export function update(fn) { fn(state); save(); saveHook?.(); }
 
 // ---- 記録 ----
 export function addLog(ex) {

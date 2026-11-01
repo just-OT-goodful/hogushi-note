@@ -1,11 +1,11 @@
 // Service Worker：アプリ本体をキャッシュしてオフラインでも開けるようにする
 // 取得方式は「キャッシュを先に返し、裏で最新を確認して更新」。更新は次回起動時に反映されます。
 // 構成ファイルを増減したら ASSETS を更新し、VERSION を上げてください。
-const VERSION = 'v4';
+const VERSION = 'v5';
 const CACHE = `selfcare-${VERSION}`;
 const ASSETS = [
   './', 'index.html', 'manifest.webmanifest', 'css/style.css',
-  'js/app.js', 'js/data.js', 'js/store.js', 'js/ui.js', 'js/figure.js', 'js/charts.js', 'js/reminder.js',
+  'js/app.js', 'js/data.js', 'js/store.js', 'js/ui.js', 'js/figure.js', 'js/charts.js', 'js/reminder.js', 'js/backup.js',
   'js/views/home.js', 'js/views/library.js', 'js/views/exercise.js', 'js/views/records.js', 'js/views/settings.js',
   'icons/icon-192.png', 'icons/icon-512.png', 'icons/icon-maskable-512.png', 'icons/apple-touch-icon.png',
 ];

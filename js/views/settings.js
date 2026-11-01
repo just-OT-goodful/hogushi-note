@@ -1,6 +1,7 @@
 import { h, toast } from '../ui.js';
-import { get, update, exportJSON, importJSON, resetAll, WEEK } from '../store.js';
+import { get, update, importJSON, resetAll, WEEK } from '../store.js';
 import { supported, requestPermission, notify, buildICS, downloadFile } from '../reminder.js';
+import { backupNow, daysSinceBackup, persistStatus } from '../backup.js';
 
 let deferredInstall = null;
 window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferredInstall = e; });
@@ -105,12 +106,37 @@ function build(redraw) {
     },
   });
 
+  const lastBackupText = () => {
+    const t = get().meta.lastBackup;
+    if (!t) return 'まだ保存していません';
+    const d = new Date(t);
+    const days = daysSinceBackup();
+    return `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()}（${days === 0 ? '今日' : `${days}日前`}）`;
+  };
+  const persistNote = h('p', { class: 'muted small-text' });
+  persistStatus().then((st) => {
+    persistNote.textContent = st === 'yes' ? '端末の保存：ブラウザに「消さないでほしい」と許可されています。'
+      : st === 'no' ? '端末の保存：容量が足りなくなると、ブラウザが記録を整理する可能性があります（まれです）。' : '';
+  });
+
   const dataCard = h('section', { class: 'card' },
     h('h2', {}, 'データのバックアップ'),
-    h('p', { class: 'muted' }, '記録はこの端末の中だけに保存されます。機種変更や、ブラウザのデータ削除に備えて、ときどき書き出しておくと安心です。（写真・動画は含まれません）'),
-    h('div', { class: 'row' },
-      h('button', { class: 'btn ghost', onclick: () => downloadFile(`selfcare-backup-${new Date().toISOString().slice(0, 10)}.json`, exportJSON(), 'application/json') }, '書き出す'),
-      h('button', { class: 'btn ghost', onclick: () => importInput.click() }, '読み込む')),
+    h('p', { class: 'muted' }, '記録は、この端末の中だけに保存されています。機種変更・アプリの削除・ブラウザのデータ削除で消えることがあるため、ときどきバックアップを保存しておくと安心です。'),
+    h('p', { class: 'last-backup' }, h('strong', {}, '最終バックアップ：'), lastBackupText()),
+    h('button', {
+      class: 'btn primary block',
+      onclick: async () => {
+        const res = await backupNow();
+        if (res === 'cancelled') return;
+        toast(res === 'shared' ? 'バックアップを保存しました。ファイルアプリやLINEなど、保管先を選んでください' : 'バックアップのファイルを保存しました');
+        redraw();
+      },
+    }, 'バックアップを保存・送る'),
+    h('p', { class: 'muted small-text' }, '保存したファイルは、「ファイル」アプリやメール、LINEのKeepメモなど、消えない場所に残してください。'),
+    h('button', { class: 'btn ghost block', onclick: () => importInput.click() }, 'バックアップから復元する'),
+    h('p', { class: 'muted small-text' }, '復元は「追加」方式です。いまの記録は消えず、バックアップにある記録が加わります。'),
+    persistNote,
+    h('p', { class: 'muted small-text' }, '※ 写真・動画（自分で追加したもの）はバックアップに含まれません。'),
     importInput,
     h('button', {
       class: 'link-btn danger',

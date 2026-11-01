@@ -1,6 +1,7 @@
 // ルーター・リマインド監視・Service Worker 登録
 import { showBanner, closeAllSheets, toast } from './ui.js';
 import { setSaveErrorHandler, ymd } from './store.js';
+import { ensurePersist } from './backup.js';
 import { homeView } from './views/home.js';
 import { libraryView } from './views/library.js';
 import { exerciseView, routineDoneView } from './views/exercise.js';
@@ -50,6 +51,7 @@ function render() {
 }
 window.addEventListener('hashchange', render);
 render();
+ensurePersist();
 
 // ---- リマインド（アプリを開いている間） ----
 async function tick() {

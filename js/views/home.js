@@ -1,5 +1,6 @@
-import { h, openCheckin, painWord } from '../ui.js';
-import { ymd, WEEK, logsOn, checkinsOn, dayCounts, streak, rangeDates } from '../store.js';
+import { h, openCheckin, painWord, toast } from '../ui.js';
+import { get, update, ymd, WEEK, logsOn, checkinsOn, dayCounts, streak, rangeDates } from '../store.js';
+import { backupNow, backupNudge, snoozeBackupNudge } from '../backup.js';
 import { ROUTINES, SAFETY, exById, routineMinutes } from '../data.js';
 import { nextReminder } from '../reminder.js';
 
@@ -37,6 +38,36 @@ export function homeView() {
       ? h('p', { class: 'muted small-text' }, `次のお知らせ：${sameDay(next, now) ? '今日' : `${next.getMonth() + 1}/${next.getDate()}（${WEEK[next.getDay()]}）`} ${String(next.getHours()).padStart(2, '0')}:${String(next.getMinutes()).padStart(2, '0')}`)
       : h('p', { class: 'muted small-text' }, h('a', { href: '#/settings' }, 'リマインドを設定'), 'すると、ケアの時間をお知らせします。'));
 
+  const rerender = () => window.dispatchEvent(new Event('hashchange'));
+  const nudge = backupNudge();
+  const notice = !get().meta.introSeen
+    ? h('section', { class: 'card notice' },
+      h('h2', {}, 'はじめに：記録の保存について'),
+      h('ul', { class: 'plain' },
+        h('li', {}, '記録は、この端末の中だけに保存されます（外部には送られません）。'),
+        h('li', {}, '機種変更・アプリの削除・ブラウザのデータ削除で消えることがあります。'),
+        h('li', {}, '設定の「バックアップを保存・送る」で、ときどき保存しておくと安心です。'),
+        isStandalone() ? null : h('li', {}, 'ホーム画面に追加してから使うと、記録が消えにくくなります。')),
+      h('div', { class: 'row' },
+        h('button', { class: 'btn primary', onclick: () => { update((s) => { s.meta.introSeen = true; }); rerender(); } }, 'わかりました'),
+        h('a', { class: 'btn ghost', href: '#/settings' }, '設定を開く')))
+    : nudge
+      ? h('section', { class: 'card notice' },
+        h('h2', {}, 'バックアップしましょう'),
+        h('p', {}, nudge.never ? '記録はまだバックアップされていません。機種変更や削除に備えて、保存しておきましょう。' : `最後のバックアップから${nudge.days}日たちました。記録が増えているので、保存しておきましょう。`),
+        h('div', { class: 'row' },
+          h('button', {
+            class: 'btn primary',
+            onclick: async () => {
+              const res = await backupNow();
+              if (res === 'cancelled') return;
+              toast('バックアップを保存しました');
+              rerender();
+            },
+          }, '今すぐバックアップ'),
+          h('button', { class: 'btn ghost', onclick: () => { snoozeBackupNudge(7); rerender(); } }, '7日後に知らせる')))
+      : null;
+
   const check = h('section', { class: 'card' },
     h('h2', {}, '今日の状態'),
     lastCheck
@@ -68,7 +99,7 @@ export function homeView() {
       : h('p', {}, 'Chrome の右上メニュー（︙）→「ホーム画面に追加」または「アプリをインストール」を選びます。'),
     h('p', { class: 'muted small-text' }, '追加すると、アプリのように全画面で開けます。'));
 
-  return h('div', { class: 'view' }, hero, check, routines, safety, install);
+  return h('div', { class: 'view' }, hero, notice, check, routines, safety, install);
 }
 
 const sameDay = (a, b) => ymd(a) === ymd(b);
