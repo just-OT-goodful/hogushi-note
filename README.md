@@ -93,6 +93,7 @@ js/reminder.js        通知・.ics
 js/views/             各画面
 icons/                アプリアイコン
 media/                同梱する写真・動画
+docs/要件書.md        要件定義書（機能・データ仕様・制約・変更履歴）
 ```
 
 ## 注意
