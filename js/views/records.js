@@ -8,7 +8,7 @@ let range = 7;
 const fmtDelta = (d) => (d > 0 ? '+' : d < 0 ? '−' : '±') + Math.abs(d).toFixed(1);
 
 export function recordsView() {
-  const root = h('div', { class: 'view' });
+  const root = h('div', { class: 'view cols' });
   const draw = () => root.replaceChildren(...build(draw));
   draw();
   return root;

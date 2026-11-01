@@ -99,7 +99,7 @@ export function homeView() {
       : h('p', {}, 'Chrome の右上メニュー（︙）→「ホーム画面に追加」または「アプリをインストール」を選びます。'),
     h('p', { class: 'muted small-text' }, '追加すると、アプリのように全画面で開けます。'));
 
-  return h('div', { class: 'view' }, hero, notice, check, routines, safety, install);
+  return h('div', { class: 'view cols' }, hero, notice, check, routines, safety, install);
 }
 
 const sameDay = (a, b) => ymd(a) === ymd(b);

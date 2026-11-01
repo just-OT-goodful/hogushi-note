@@ -13,7 +13,7 @@ const PRESETS = [
 ];
 
 export function settingsView() {
-  const root = h('div', { class: 'view' });
+  const root = h('div', { class: 'view cols' });
   const draw = () => root.replaceChildren(...build(draw));
   draw();
   return root;

@@ -95,7 +95,11 @@ export function exerciseView(id, routine) {
       ? h('a', { class: 'link-btn', href: '#/home' }, 'やめてホームへ')
       : h('a', { class: 'link-btn', href: '#/library' }, '← 体操一覧へ'));
 
-  return h('div', { class: 'view' }, head, h('div', { class: 'card fig-card' }, fig.el, figControls), doseCard, steps, tips, caution, mediaSection(ex), nav);
+  // 広い画面では、左にイラスト（追従）・右に手順を並べる。スマホでは同じ順で縦に並ぶ
+  return h('div', { class: 'view ex-view' },
+    h('div', { class: 'ex-cols' },
+      h('div', { class: 'ex-left' }, head, h('div', { class: 'card fig-card' }, fig.el, figControls)),
+      h('div', { class: 'ex-right' }, doseCard, steps, tips, caution, mediaSection(ex), nav)));
 }
 
 // ---- 回数カウンター / キープタイマー ----
