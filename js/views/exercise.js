@@ -77,7 +77,11 @@ export function exerciseView(id, routine) {
     doneBtn.textContent = r ? (routine.idx + 1 < r.ids.length ? 'できた！ 次へ' : 'できた！ 最後です') : (n ? `もう1回できた！（今日${n}回目を記録済み）` : 'やった！ 記録する');
   };
   refreshDone();
+  let busy = false; // うっかり二重タップで2回記録されないようにする
   doneBtn.addEventListener('click', () => {
+    if (busy) return;
+    busy = true;
+    setTimeout(() => { busy = false; }, 800);
     addLog(ex.id);
     if (r) {
       location.hash = routine.idx + 1 < r.ids.length ? `#/routine/${r.id}/${routine.idx + 1}` : `#/routine/${r.id}/done`;

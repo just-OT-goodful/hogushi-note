@@ -1,4 +1,4 @@
-import { h, toast } from '../ui.js';
+import { h, toast, twoCols } from '../ui.js';
 import { get, update, importJSON, resetAll, WEEK } from '../store.js';
 import { supported, requestPermission, notify, buildICS, downloadFile } from '../reminder.js';
 import { backupNow, daysSinceBackup, persistStatus } from '../backup.js';
@@ -13,7 +13,7 @@ const PRESETS = [
 ];
 
 export function settingsView() {
-  const root = h('div', { class: 'view cols' });
+  const root = h('div', { class: 'view' });
   const draw = () => root.replaceChildren(...build(draw));
   draw();
   return root;
@@ -147,5 +147,5 @@ function build(redraw) {
     h('h2', {}, 'このアプリについて'),
     h('p', { class: 'muted' }, '肩こり・腰痛のセルフケアを習慣にするためのアプリです。診断や治療の代わりにはなりません。痛みやしびれが強い場合は、医療機関に相談してください。'));
 
-  return [h('h1', { class: 'page-title' }, '設定'), remindCard, calCard, installCard, dataCard, about];
+  return [h('h1', { class: 'page-title' }, '設定'), twoCols([remindCard, calCard], [installCard, dataCard, about])];
 }

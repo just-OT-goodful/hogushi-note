@@ -7,31 +7,34 @@ import { libraryView } from './views/library.js';
 import { exerciseView, routineDoneView } from './views/exercise.js';
 import { recordsView } from './views/records.js';
 import { settingsView } from './views/settings.js';
-import { ROUTINES } from './data.js';
+import { ROUTINES, exById } from './data.js';
 import { dueReminders, markFired, notify } from './reminder.js';
 
 const app = document.getElementById('app');
 const tabs = [...document.querySelectorAll('#tabs a')];
 
+// 戻り値：[タブ, 画面, ページタイトル, 体操の途中か]
 function view() {
   const [, name = 'home', a, b] = location.hash.replace(/^#/, '').split('/');
   switch (name) {
-    case 'library': return ['library', libraryView()];
-    case 'ex': return ['library', exerciseView(a)];
-    case 'records': return ['records', recordsView()];
-    case 'settings': return ['settings', settingsView()];
+    case 'library': return ['library', libraryView(), '体操'];
+    case 'ex': return ['library', exerciseView(a), exById(a)?.name || '体操', true];
+    case 'records': return ['records', recordsView(), '記録'];
+    case 'settings': return ['settings', settingsView(), '設定'];
     case 'routine': {
       const r = ROUTINES.find((x) => x.id === a);
-      if (!r) return ['home', homeView()];
-      if (b === 'done') return ['home', routineDoneView(a)];
+      if (!r) return ['home', homeView(), 'ホーム'];
+      if (b === 'done') return ['home', routineDoneView(a), 'ケア完了'];
       const idx = Math.min(Math.max(parseInt(b, 10) || 0, 0), r.ids.length - 1);
-      return ['home', exerciseView(r.ids[idx], { id: r.id, idx })];
+      return ['home', exerciseView(r.ids[idx], { id: r.id, idx }), `${r.name} ${idx + 1}/${r.ids.length}`, true];
     }
-    default: return ['home', homeView()];
+    default: return ['home', homeView(), 'ホーム'];
   }
 }
 
 let renderedDay = ymd(new Date());
+let midExercise = false; // 体操の途中（タイマーなどを動かしているため、勝手に再描画しない）
+let firstRender = true;
 
 // 記録を保存できなかったときは、気づけるように知らせる（ストレージの空き不足・プライベートモード等）
 let warned = false;
@@ -41,17 +44,30 @@ setSaveErrorHandler(() => {
   toast('記録を保存できませんでした。端末の空き容量やプライベートモードを確認してください');
 });
 
-function render() {
+// keepScroll: 同じ画面の内容だけを更新するとき（スクロール位置とフォーカスはそのまま）
+function render({ keepScroll = false } = {}) {
   closeAllSheets();
   renderedDay = ymd(new Date());
-  const [tab, el] = view();
+  const [tab, el, title, mid] = view();
+  midExercise = !!mid;
+  const y = window.scrollY;
   app.replaceChildren(el);
   tabs.forEach((t) => (t.dataset.tab === tab ? t.setAttribute('aria-current', 'page') : t.removeAttribute('aria-current')));
+  document.title = `${title}｜ほぐしノート`;
+  if (keepScroll) { window.scrollTo(0, y); return; }
   window.scrollTo(0, 0);
+  if (!firstRender) app.focus({ preventScroll: true }); // 画面が変わったことが、読み上げ機能にも伝わるようにする
+  firstRender = false;
 }
-window.addEventListener('hashchange', render);
+window.addEventListener('hashchange', () => render());
 render();
 ensurePersist();
+
+// 同じ画面の内容を更新する（記録を保存したあと、別のタブで記録が変わったときなど）
+window.addEventListener('selfcare:refresh', () => {
+  if (midExercise || document.querySelector('.sheet')) return;
+  render({ keepScroll: true });
+});
 
 // ---- リマインド（アプリを開いている間） ----
 async function tick() {
@@ -73,7 +89,7 @@ document.addEventListener('visibilitychange', () => {
   tick();
   // 日付をまたいで開いたままだった場合は、今日の表示に更新する（体操の途中などは触らない）
   const name = location.hash.replace(/^#\/?/, '').split('/')[0];
-  if (ymd(new Date()) !== renderedDay && (name === '' || name === 'home' || name === 'records')) render();
+  if (ymd(new Date()) !== renderedDay && (name === '' || name === 'home' || name === 'records')) render({ keepScroll: true });
 });
 
 // ---- Service Worker（オフライン対応・ホーム画面追加） ----

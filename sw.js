@@ -1,7 +1,7 @@
 // Service Worker：アプリ本体をキャッシュしてオフラインでも開けるようにする
 // 取得方式は「キャッシュを先に返し、裏で最新を確認して更新」。更新は次回起動時に反映されます。
 // 構成ファイルを増減したら ASSETS を更新し、VERSION を上げてください。
-const VERSION = 'v6';
+const VERSION = 'v7';
 const CACHE = `selfcare-${VERSION}`;
 const ASSETS = [
   './', 'index.html', 'manifest.webmanifest', 'css/style.css',
@@ -38,9 +38,11 @@ self.addEventListener('fetch', (e) => {
 
   e.respondWith((async () => {
     const cache = await caches.open(CACHE);
-    const hit = await cache.match(req, { ignoreSearch: true });
+    // 「?」以降が違うだけのURL（共有リンクの識別子など）でキャッシュが増え続けないよう、保存先を1つにそろえる
+    const key = req.mode === 'navigate' ? new URL('./', self.registration.scope).href : (() => { const u = new URL(req.url); u.search = ''; return u.href; })();
+    const hit = await cache.match(key);
     const fresh = fetch(req, { cache: 'no-cache' }).then((res) => {
-      if (res.ok) cache.put(req, res.clone());
+      if (res.ok) cache.put(key, res.clone());
       return res;
     }).catch(() => null);
     if (hit) { e.waitUntil(fresh); return hit; }

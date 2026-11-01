@@ -1,4 +1,4 @@
-import { h, openCheckin, toast, painWord } from '../ui.js';
+import { h, openCheckin, toast, painWord, twoCols } from '../ui.js';
 import { get, mean, rangeDates, dailyMean, dayCounts, streak, afterCareEffect, removeLog, removeCheckin, WEEK } from '../store.js';
 import { exById } from '../data.js';
 import { painChart, heatmap } from '../charts.js';
@@ -8,7 +8,7 @@ let range = 7;
 const fmtDelta = (d) => (d > 0 ? '+' : d < 0 ? '−' : '±') + Math.abs(d).toFixed(1);
 
 export function recordsView() {
-  const root = h('div', { class: 'view cols' });
+  const root = h('div', { class: 'view' });
   const draw = () => root.replaceChildren(...build(draw));
   draw();
   return root;
@@ -76,7 +76,7 @@ function build(redraw) {
     h('div', { class: 'legend small' }, '少', [0, 1, 2, 3, 4].map((l) => h('i', { class: `hm l${l}` })), '多'),
     topList(dates));
 
-  return [h('h1', { class: 'page-title' }, '記録'), changeCard, careCard, historyCard(redraw)];
+  return [h('h1', { class: 'page-title' }, '記録'), twoCols([changeCard, careCard], [historyCard(redraw)])];
 }
 
 const statBox = (n, label) => h('div', { class: 'stat' }, h('b', {}, String(n)), h('span', {}, label));

@@ -1,4 +1,4 @@
-import { h, openCheckin, painWord, toast } from '../ui.js';
+import { h, openCheckin, painWord, toast, twoCols } from '../ui.js';
 import { get, update, ymd, WEEK, logsOn, checkinsOn, dayCounts, streak, rangeDates } from '../store.js';
 import { backupNow, backupNudge, snoozeBackupNudge } from '../backup.js';
 import { ROUTINES, SAFETY, exById, routineMinutes } from '../data.js';
@@ -38,7 +38,7 @@ export function homeView() {
       ? h('p', { class: 'muted small-text' }, `次のお知らせ：${sameDay(next, now) ? '今日' : `${next.getMonth() + 1}/${next.getDate()}（${WEEK[next.getDay()]}）`} ${String(next.getHours()).padStart(2, '0')}:${String(next.getMinutes()).padStart(2, '0')}`)
       : h('p', { class: 'muted small-text' }, h('a', { href: '#/settings' }, 'リマインドを設定'), 'すると、ケアの時間をお知らせします。'));
 
-  const rerender = () => window.dispatchEvent(new Event('hashchange'));
+  const rerender = () => window.dispatchEvent(new Event('selfcare:refresh'));
   const nudge = backupNudge();
   const notice = !get().meta.introSeen
     ? h('section', { class: 'card notice' },
@@ -74,10 +74,10 @@ export function homeView() {
       ? h('div', { class: 'today-check' },
         pill('neck', '首・肩', lastCheck.neck), pill('back', '腰', lastCheck.back))
       : h('p', { class: 'muted' }, 'まだ記録がありません。ケアの前後で記録すると、変化が見えてきます。'),
-    h('button', { class: 'btn ' + (lastCheck ? 'ghost' : 'primary') + ' block', onclick: () => openCheckin({ onSave: () => window.dispatchEvent(new Event('hashchange')) }) },
+    h('button', { class: 'btn ' + (lastCheck ? 'ghost' : 'primary') + ' block', onclick: () => openCheckin({ onSave: rerender }) },
       lastCheck ? 'もう一度記録する' : 'こり・痛みを記録する'));
 
-  const routines = h('section', {},
+  const routines = h('section', { class: 'routines' },
     h('h2', { class: 'sec' }, 'まとめてケア'),
     ROUTINES.map((r) => h('a', { class: 'card routine', href: `#/routine/${r.id}/0` },
       h('div', {},
@@ -99,7 +99,7 @@ export function homeView() {
       : h('p', {}, 'Chrome の右上メニュー（︙）→「ホーム画面に追加」または「アプリをインストール」を選びます。'),
     h('p', { class: 'muted small-text' }, '追加すると、アプリのように全画面で開けます。'));
 
-  return h('div', { class: 'view cols' }, hero, notice, check, routines, safety, install);
+  return h('div', { class: 'view' }, twoCols([hero, notice, check], [routines, safety, install]));
 }
 
 const sameDay = (a, b) => ymd(a) === ymd(b);

@@ -20,6 +20,7 @@ export function h(tag, props, ...kids) {
 export const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
 export function toast(msg) {
+  document.querySelectorAll('.toast').forEach((old) => old.remove()); // 重ならないよう、前のメッセージは消す
   const t = h('div', { class: 'toast', role: 'status' }, msg);
   document.body.append(t);
   setTimeout(() => t.classList.add('out'), 2200);
@@ -28,6 +29,10 @@ export function toast(msg) {
 
 const openSheets = new Set();
 export const closeAllSheets = () => [...openSheets].forEach((close) => close());
+const syncScrollLock = () => document.body.classList.toggle('sheet-open', openSheets.size > 0); // 背景のスクロールを止める
+
+// 2列に並べる（スマホでは同じ順で縦に並ぶ）。広い画面で、開閉などで内容の高さが変わっても列が入れ替わらない
+export const twoCols = (left, right) => h('div', { class: 'two-cols' }, h('div', { class: 'col' }, left), h('div', { class: 'col' }, right));
 
 export function openSheet(content, { title = '' } = {}) {
   const prevFocus = document.activeElement;
@@ -53,10 +58,12 @@ export function openSheet(content, { title = '' } = {}) {
   function close() {
     document.removeEventListener('keydown', onKey);
     openSheets.delete(close);
+    syncScrollLock();
     overlay.remove();
     if (prevFocus && prevFocus.isConnected) prevFocus.focus();
   }
   openSheets.add(close);
+  syncScrollLock();
   (sheet.querySelector('input, textarea') || sheet.querySelector('button.btn'))?.focus();
   return close;
 }

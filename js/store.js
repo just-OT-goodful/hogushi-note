@@ -86,6 +86,23 @@ try {
   state = defaults();
 }
 
+// 保存済みの内容を読み直す。ホーム画面アプリとブラウザのタブなど、複数の画面が同時に開いていても、
+// 別の画面が追加した記録を上書きして消さないため、更新の直前に必ず読み直す。
+function reload() {
+  try {
+    const raw = localStorage.getItem(KEY);
+    if (raw) state = sanitize({ ...defaults(), ...JSON.parse(raw) });
+  } catch { /* 読めなければ手元のデータを使う */ }
+}
+// 別の画面でデータが変わったら、取り込んで画面の更新を促す
+if (typeof window !== 'undefined') {
+  window.addEventListener('storage', (e) => {
+    if (e.key !== KEY) return;
+    reload();
+    window.dispatchEvent(new Event('selfcare:refresh'));
+  });
+}
+
 let onSaveError = null;
 export const setSaveErrorHandler = (fn) => { onSaveError = fn; };
 function save() {
@@ -96,7 +113,7 @@ let saveHook = null;
 export const setSaveHook = (fn) => { saveHook = fn; };
 
 export const get = () => state;
-export function update(fn) { fn(state); save(); saveHook?.(); }
+export function update(fn) { reload(); fn(state); save(); saveHook?.(); }
 
 // ---- 記録 ----
 export function addLog(ex) {
